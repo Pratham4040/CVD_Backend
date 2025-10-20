@@ -46,7 +46,7 @@ ALLOWED_ORIGINS = _get_list_env(
     "https://cvdsimulator.netlify.app/,http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174",
 )
 ALLOWED_HOSTS = _get_list_env("ALLOWED_HOSTS", "*")
-MAX_UPLOAD_MB = float(os.getenv("MAX_UPLOAD_MB", "10"))  # maximum upload size in MB
+MAX_UPLOAD_MB = float(os.getenv("MAX_UPLOAD_MB", "1"))  # maximum upload size in MB
 MAX_IMAGE_DIM = int(os.getenv("MAX_IMAGE_DIM", "4096"))  # maximum width/height; larger images will be scaled down
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
