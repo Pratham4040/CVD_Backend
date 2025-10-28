@@ -441,12 +441,29 @@ async def analyze_palette(
                 })
         # CVD confusion across palette
         confusions = _cvd_confusion_scores(colors_rgb)
+        # --- CVD visibility scoring ---
+        # For each CVD type, count pairs with cvdContrast >= 3.0 and DeltaE >= 20
+        cvd_types = ["protanopia", "deuteranopia", "tritanopia"]
+        cvd_scores = {}
+        for cvd in cvd_types:
+            total = 0
+            good = 0
+            for c in confusions:
+                if c["worstCVD"] == cvd:
+                    total += 1
+                    if c["cvdContrast"] >= 3.0 and c["minDeltaE"] >= 20:
+                        good += 1
+            score = (good / total) if total else 1.0
+            cvd_scores[cvd] = round(score * 100, 1)
+        # Overall: mean of the three
+        overall = sum(cvd_scores.values()) / len(cvd_scores) if cvd_scores else 100.0
+        cvd_scores["overall"] = round(overall, 1)
         # Suggestions
         suggestions = []
         # For high-risk pairs, suggest variant on first color
         for c in confusions:
             if c["risk"] >= 0.5:
-                c1 = _hex_to_rgb(c["c1"]) 
+                c1 = _hex_to_rgb(c["c1"])
                 others = [ _hex_to_rgb(c["c2"]) ]
                 new_rgb = _suggest_cvd_safe_variant(c1, others)
                 suggestions.append({
@@ -460,8 +477,8 @@ async def analyze_palette(
         if wcag:
             for r in wcag:
                 if not r["passAA"]:
-                    fg = _hex_to_rgb(r["fg"]) 
-                    bg = _hex_to_rgb(r["bg"]) 
+                    fg = _hex_to_rgb(r["fg"])
+                    bg = _hex_to_rgb(r["bg"])
                     options = [
                         np.array([0,0,0], dtype=np.float32),
                         np.array([255,255,255], dtype=np.float32),
@@ -483,7 +500,7 @@ async def analyze_palette(
                         "contrast": round(float(best_cr), 2),
                         "delta": round(float(best_cr - r["contrast"]), 2),
                     })
-        return {"wcag": wcag, "cvd": confusions, "suggestions": suggestions}
+        return {"wcag": wcag, "cvd": confusions, "cvdScores": cvd_scores, "suggestions": suggestions}
     except Exception as e:
         logger.exception("palette analyze failed")
         if isinstance(e, HTTPException):
